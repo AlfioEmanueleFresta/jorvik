@@ -233,3 +233,4 @@ BOOTSTRAP3 = {
 }
 
 THUMBNAIL_BASEDIR = 'thumbnails'
+
