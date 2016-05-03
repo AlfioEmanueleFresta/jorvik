@@ -55,6 +55,11 @@ INSTALLED_APPS = (
     'centrale_operativa',
     'compressor',
     'easy_thumbnails',
+    'ckeditor',
+    'ckeditor_filebrowser_filer',
+    'gestione_file',
+    'segmenti',
+    'filer',
 )
 
 STATICFILES_FINDERS = (
@@ -234,3 +239,36 @@ BOOTSTRAP3 = {
 
 THUMBNAIL_BASEDIR = 'thumbnails'
 
+CKEDITOR_CONFIGS = {
+    'default': {
+        'toolbar': 'Custom',
+        'toolbar_Custom': [
+            ['Bold', 'Italic', 'Underline'],
+            ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
+            ['Link', 'Unlink'],
+            ['RemoveFormat', 'Source'],
+            ['FilerImage']
+        ],
+        'extraPlugins': 'filerimage',
+        'removePlugins': 'image'
+    },
+}
+
+FILER_CANONICAL_URL = 'sharing/'
+CKEDITOR_FILEBROWSER_USE_THUMBNAILOPTIONS_ONLY = True
+
+THUMBNAIL_BASEDIR = 'thumbnails'
+THUMBNAIL_PROCESSORS = (
+    'easy_thumbnails.processors.colorspace',
+    'easy_thumbnails.processors.autocrop',
+    'filer.thumbnail_processors.scale_and_crop_with_subject_location',
+    'easy_thumbnails.processors.filters',
+)
+
+FILER_IMAGE_FIELD = 'gestione_file.fields.CampoImmagineFiler'
+FILER_FILE_FIELD = 'gestione_file.fields.CampoDocumentoFiler'
+
+FILER_FILE_MODELS = (
+    'gestione_file.models.Immagine',
+    'gestione_file.models.Documento',
+)
