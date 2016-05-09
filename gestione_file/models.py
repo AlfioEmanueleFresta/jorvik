@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from django.db import models
+from django.core.urlresolvers import reverse
+from django.db import models, transaction
 
 from django.utils.translation import ugettext_lazy as _
 from filer.models import File
@@ -27,9 +28,19 @@ class InterfacciaJorvik(object):
             return self.url_documento
         return super(InterfacciaJorvik, self).path
 
+    @transaction.atomic
+    def incrementa_downloads(self):
+        self.downloads += 1
+        self.save()
+
+    @property
+    def url_scarica(self):
+        return reverse('scarica_file', args=(self.pk,))
+
 
 class Documento(InterfacciaJorvik, File):
     url_documento = models.URLField(_('URL Documento'), default='', blank=True)
+    downloads = models.PositiveIntegerField("Downloads", db_index=True, default=0)
 
     class Meta:
         abstract = False
@@ -38,6 +49,7 @@ class Documento(InterfacciaJorvik, File):
 
 class Immagine(InterfacciaJorvik, BaseImage):
     url_documento = models.URLField(_('URL Documento'), default='', blank=True)
+    downloads = models.PositiveIntegerField("Downloads", db_index=True, default=0)
 
     class Meta:
         abstract = False
