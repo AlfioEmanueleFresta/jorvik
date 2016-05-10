@@ -3,11 +3,15 @@ import os.path
 
 from django.contrib import admin
 from django.contrib.admin.templatetags.admin_urls import add_preserved_filters
+from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
+from django.utils.translation import ugettext as _
 
 from filer import settings as filer_settings
-from filer.admin import FileAdmin, ImageAdmin, FolderAdmin
+from filer.admin import FolderAdmin
+from filer.admin.fileadmin import FileAdmin, FileAdminChangeFrom
+from filer.admin.imageadmin import ImageAdmin, ImageAdminForm
 from filer.models import File, Folder
 from filer.utils.loader import load_object
 from filer.admin.tools import AdminContext, popup_status
@@ -22,6 +26,24 @@ class AdminCartella(FolderAdmin):
 
 
 admin.site.register(Folder, AdminCartella)
+
+
+class ControllaCampiRiempiti(object):
+
+    def clean(self):
+        data = super(ControllaCampiRiempiti, self).clean()
+        if not data['url_documento'] and not data['file']:
+            self.add_error('url_documento', ValidationError(
+                "Deve essere caricato un documento o un assegnato un link al documento."
+            ))
+            self.add_error('file', ValidationError(
+                "Deve essere caricato un documento o un assegnato un link al documento."
+            ))
+        return data
+
+
+class DocumentoAdminForm(ControllaCampiRiempiti, FileAdminChangeFrom):
+    pass
 
 
 class DocumentoSegmentoInline(admin.TabularInline):
@@ -39,6 +61,34 @@ class AdminDocumento(FileAdmin):
     extra_fieldsets = ()
     fieldsets = None
     inlines = (DocumentoSegmentoInline,)
+    form = DocumentoAdminForm
+
+    @classmethod
+    def build_fieldsets(cls, extra_main_fields=(), extra_advanced_fields=(),
+                        extra_fieldsets=()):
+        fieldsets = (
+                        (None, {
+                            'fields': (
+                                          'name',
+                                          'description',
+                                      ) + extra_main_fields,
+                        }),
+                        (_('Advanced'), {
+                            'fields': (
+                                          'file',
+                                          'sha1',
+                                          'display_canonical',
+                                      ) + extra_advanced_fields,
+                            'classes': ('collapse',),
+                        }),
+                    ) + extra_fieldsets
+        if filer_settings.FILER_ENABLE_PERMISSIONS:
+            fieldsets = fieldsets + (
+                (None, {
+                    'fields': ('is_public',)
+                }),
+            )
+        return fieldsets
 
     def has_add_permission(self, request):
         return admin.ModelAdmin.has_add_permission(self, request)
@@ -126,10 +176,15 @@ AdminDocumento.fieldsets = AdminDocumento.build_fieldsets(
 admin.site.register(Documento, AdminDocumento)
 
 
+class ImmagineAdminForm(ControllaCampiRiempiti, ImageAdminForm):
+    pass
+
+
 class AdminImmagine(ImageAdmin):
     add_form_template = 'admin/gestione_file/form_aggiungi.html'
     change_form_template = 'admin/filer/image/change_form.html'
     inlines = (DocumentoSegmentoInline,)
+    form = ImmagineAdminForm
 
 AdminImmagine.fieldsets = AdminImmagine.build_fieldsets(
     extra_main_fields=('default_alt_text', 'default_caption', 'url_documento'),
